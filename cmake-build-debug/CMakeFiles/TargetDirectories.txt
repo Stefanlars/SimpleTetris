@@ -1,0 +1,3 @@
+C:/Users/sdalp/CLionProjects/SimpleTetris/cmake-build-debug/CMakeFiles/SimpleTetris.dir
+C:/Users/sdalp/CLionProjects/SimpleTetris/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/sdalp/CLionProjects/SimpleTetris/cmake-build-debug/CMakeFiles/rebuild_cache.dir
