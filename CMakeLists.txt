@@ -9,4 +9,6 @@ add_executable(SimpleTetris
         main.cpp
         Blocks/Block.cpp
         Blocks/Block.h
+        GameManager/sceneRenderer.cpp
+        GameManager/sceneRenderer.h
 )

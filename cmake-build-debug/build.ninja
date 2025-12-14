@@ -65,6 +65,14 @@ build CMakeFiles/SimpleTetris.dir/Blocks/Block.cpp.obj: CXX_COMPILER__SimpleTetr
   OBJECT_DIR = CMakeFiles\SimpleTetris.dir
   OBJECT_FILE_DIR = CMakeFiles\SimpleTetris.dir\Blocks
 
+build CMakeFiles/SimpleTetris.dir/GameManager/sceneRenderer.cpp.obj: CXX_COMPILER__SimpleTetris_unscanned_Debug C$:/Users/sdalp/CLionProjects/SimpleTetris/GameManager/sceneRenderer.cpp || cmake_object_order_depends_target_SimpleTetris
+  CONFIG = Debug
+  DEP_FILE = CMakeFiles\SimpleTetris.dir\GameManager\sceneRenderer.cpp.obj.d
+  FLAGS = -g -std=gnu++14 -fdiagnostics-color=always
+  INCLUDES = -IC:/Users/sdalp/CLionProjects/SimpleTetris/.
+  OBJECT_DIR = CMakeFiles\SimpleTetris.dir
+  OBJECT_FILE_DIR = CMakeFiles\SimpleTetris.dir\GameManager
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target SimpleTetris
@@ -73,7 +81,7 @@ build CMakeFiles/SimpleTetris.dir/Blocks/Block.cpp.obj: CXX_COMPILER__SimpleTetr
 #############################################
 # Link the executable SimpleTetris.exe
 
-build SimpleTetris.exe: CXX_EXECUTABLE_LINKER__SimpleTetris_Debug CMakeFiles/SimpleTetris.dir/main.cpp.obj CMakeFiles/SimpleTetris.dir/Blocks/Block.cpp.obj
+build SimpleTetris.exe: CXX_EXECUTABLE_LINKER__SimpleTetris_Debug CMakeFiles/SimpleTetris.dir/main.cpp.obj CMakeFiles/SimpleTetris.dir/Blocks/Block.cpp.obj CMakeFiles/SimpleTetris.dir/GameManager/sceneRenderer.cpp.obj
   CONFIG = Debug
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
