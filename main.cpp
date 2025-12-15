@@ -3,12 +3,6 @@
 //
 
 
-#include <iostream>
-
-#include "Blocks/Block.h"
-
-#include <vector>
-
 #include "GameManager/SceneRenderer.h"
 
 int main() {

@@ -1,96 +1,101 @@
-//
-// Created by sdalp on 12/13/2025.
-//
-
 #ifndef SIMPLETETRIS_SCENERENDERER_H
 #define SIMPLETETRIS_SCENERENDERER_H
 #include <chrono>
-#include <iostream>
 #include <thread>
 #include <vector>
+#include <curses.h>  // PDCurses or ncurses
 
 #include "Blocks/Block.h"
 
-
 class SceneRenderer {
-
-    // 20 rows, 10 columns
     std::vector<std::vector<char>> grid{20, std::vector<char>(10, '.')};
-
     bool gameRunning = false;
 
-    public:
-        SceneRenderer() = default;
+public:
+    SceneRenderer() = default;
 
+    std::vector<std::vector<char>>* getGrid() {
+        return &grid;
+    }
 
-        // returns a pointer for the grid
-        std::vector<std::vector<char>>* getGrid() {
-            return &grid;
-        }
+    // Initialize curses; call before startGame or in startGame
+    void initCurses() {
+        initscr();            // Start curses mode
+        cbreak();             // Disable line buffering
+        noecho();             // Don't echo typed characters
+        keypad(stdscr, TRUE); // Enable special keys
+        curs_set(0);          // Hide cursor
+        // Optional: make getch non-blocking if you plan to poll input
+        // nodelay(stdscr, TRUE);
+    }
 
-        void startGame() {
-            gameRunning = true;
+    void shutdownCurses() {
+        endwin();             // Restore terminal
+    }
 
-            int i = 0;
-            while (gameRunning) {
+    void startGame() {
+        initCurses();
+        gameRunning = true;
 
+        int i = 0;
+        while (gameRunning) {
+            update(i);
+            render(); // curses-based render
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-                update(i);
-
-                render();
-
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-                i++;
-                if (i > 20) {
-                    endGame();
-                }
+            i++;
+            if (i > 20) {
+                endGame();
             }
         }
 
-        void endGame() {
-            gameRunning = false;
-        }
+        shutdownCurses();
+    }
 
-        // test running the rendering
-        void update(int offset) {
+    void endGame() {
+        gameRunning = false;
+    }
 
-            resetGrid();
+    void update(int offset) {
+        resetGrid();
 
-            constexpr Point initPosition = {4, 2};
-            Block block(initPosition, BlockType::L);
+        constexpr Point initPosition = {4, 2};
+        Block block(initPosition, BlockType::L);
 
-            auto currentPositions = block.getCurrentPosition();
-            // Mark block positions:
+        auto currentPositions = block.getCurrentPosition();
 
-            if (offset < 18) {
-                for (int i = 0; i < 4; i++) {
-                    grid[currentPositions[i].y + offset][currentPositions[i].x] = 'O';
-                }
+        if (offset < 18) {
+            for (int i = 0; i < 4; i++) {
+                grid[currentPositions[i].y + offset][currentPositions[i].x] = 'O';
             }
-
         }
+    }
 
-        void render() const {
+    void render() const {
+        // Clear the curses screen
+        clear();
 
-            // Print your screen
-            for (const auto& row : grid) {
-                for (const char cell : row) {
-                    std::cout << " " << cell << " ";
-                }
-                std::cout << "\n";
+        // Draw the grid starting at some top-left offset, e.g., (0,0)
+        // Use mvaddch(row, col, ch) to place characters
+        for (int r = 0; r < (int)grid.size(); ++r) {
+            for (int c = 0; c < (int)grid[r].size(); ++c) {
+                // Add spacing similar to " std::cout << ' ' << cell << ' '; "
+                // One common approach is to draw each cell and maybe a space
+                mvaddch(r, c * 2, grid[r][c]);
+                mvaddch(r, c * 2 + 1, ' ');
             }
-
-            std::cout << std::flush;  // Force output
-
         }
 
+        // Optional: draw a status line below the grid
+        mvprintw((int)grid.size() + 1, 0, "Press q to quit");
 
-        void resetGrid() {
-            grid = std::vector<std::vector<char>>(20, std::vector<char>(10, '.'));
-        }
+        // Flush changes to the terminal
+        refresh();
+    }
 
+    void resetGrid() {
+        grid = std::vector<std::vector<char>>(20, std::vector<char>(10, '.'));
+    }
 };
 
-
-#endif //SIMPLETETRIS_SCENERENDERER_H
+#endif // SIMPLETETRIS_SCENERENDERER_H

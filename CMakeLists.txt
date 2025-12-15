@@ -3,7 +3,11 @@ project(SimpleTetris)
 
 set(CMAKE_CXX_STANDARD 14)
 
+
 include_directories(.)
+
+
+find_package(unofficial-pdcurses CONFIG REQUIRED)
 
 add_executable(SimpleTetris
         main.cpp
@@ -12,3 +16,5 @@ add_executable(SimpleTetris
         GameManager/sceneRenderer.cpp
         GameManager/sceneRenderer.h
 )
+
+target_link_libraries(SimpleTetris PRIVATE unofficial::pdcurses::pdcurses)
