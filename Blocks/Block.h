@@ -5,7 +5,9 @@
 #ifndef SIMPLETETRIS_BLOCK_H
 #define SIMPLETETRIS_BLOCK_H
 #include <array>
-#include <string>
+
+#include "enums.h"
+#include "GameManager/GameGrid.h"
 
 // I (straight line),
 // O (square),
@@ -16,21 +18,43 @@
 // and L (reverse L-shape)
 
 
-enum class BlockType { I, O, T, S, Z, J, L };
 
 
-struct Point {
-    int x;
-    int y;
-};
+
 
 class Block {
     Point centerPosition;
     std::array<Point, 4> blockPositions{};
+    BlockColor color;
+    GameGrid* gameGrid;
+
+
+    // Helper method to check if all positions of the block are valid
+    [[nodiscard]] bool areAllPositionsValid(const Point& testCenterPos) const {
+        for (int i = 0; i < 4; i++) {
+            Point testPos;
+            testPos.x = testCenterPos.x + blockPositions[i].x;
+            testPos.y = testCenterPos.y + blockPositions[i].y;
+
+            if (!gameGrid->isValidPosition(testPos)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
 
 public:
-    explicit Block(const Point initPosition, const BlockType blockOption): centerPosition(initPosition) {
+    explicit Block(
+        const Point initPosition,
+        const BlockType blockOption,
+        const BlockColor blockColor,
+        GameGrid* gameGrid
+        ):
+    centerPosition(initPosition),
+    color(blockColor),
+    gameGrid(gameGrid)
+    {
         // center position is always 2
 
         this->blockPositions[2].y = 0;
@@ -119,7 +143,7 @@ public:
         this->centerPosition = position;
     };
 
-    std::array<Point, 4> getCurrentPosition() const {
+    [[nodiscard]] std::array<Point, 4> getCurrentPosition() const {
 
         std::array<Point, 4> returnArray{};
         for (int i = 0; i < 4; i++) {
@@ -131,7 +155,52 @@ public:
 
     }
 
+    [[nodiscard]] BlockColor getColor() const {
+        return this->color;
+    }
 
+
+    void moveBlock(const BlockMove move) {
+        // create a copy of the current block. perform the movement.
+        // check if it conflicts with a current block.
+        //
+        // if down or QUICK_DOWN lock block and add to color grid in gamegrid.
+
+        // any other movement just don't allow the user to perform it
+
+        Point testPos = centerPosition;
+
+        switch (move) {
+            case BlockMove::ROTATE:
+                // up for now
+                testPos.y -= 1;
+                break;
+
+            case BlockMove::LEFT:
+
+                testPos.x -= 1;
+                break;
+
+            case BlockMove::RIGHT:
+                testPos.x += 1;
+                break;
+
+            case BlockMove::DOWN:
+                testPos.y += 1;
+                break;
+
+            case BlockMove::QUICK_DOWN:
+                break;
+
+            default:
+                break;
+
+        }
+
+        if (areAllPositionsValid(testPos)) {
+            centerPosition = testPos;
+        }
+    }
 
 
 

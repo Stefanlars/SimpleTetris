@@ -4,97 +4,227 @@
 #include <thread>
 #include <vector>
 #include <curses.h>  // PDCurses or ncurses
+#include <iostream>
+#include <mutex>
 
+#include "GameGrid.h"
 #include "Blocks/Block.h"
 
 class SceneRenderer {
-    std::vector<std::vector<char>> grid{20, std::vector<char>(10, '.')};
-    bool gameRunning = false;
+
+    std::atomic<bool> gameRunning{false};
+
+    std::mutex nCursesMutex;
+
+    int updateCounter = 0;
+    int renderCounter = 0;
+
+    GameGrid grid;
+
+    std::optional<Block> activeBlock;
 
 public:
     SceneRenderer() = default;
 
-    std::vector<std::vector<char>>* getGrid() {
-        return &grid;
-    }
-
     // Initialize curses; call before startGame or in startGame
     void initCurses() {
+        std::lock_guard<std::mutex> lock(nCursesMutex);
+
         initscr();            // Start curses mode
+        // Check if terminal supports colors
+        if (! has_colors()) {
+            endwin();
+            std::cerr << "Your terminal does not support colors!" << std::endl;
+            exit(1);
+        }
+
+        start_color();        // Enable color support
+
+        // Check if we can change colors
+        if (! can_change_color()) {
+            // This is normal for most terminals
+        }
+
         cbreak();             // Disable line buffering
         noecho();             // Don't echo typed characters
         keypad(stdscr, TRUE); // Enable special keys
         curs_set(0);          // Hide cursor
         // Optional: make getch non-blocking if you plan to poll input
-        // nodelay(stdscr, TRUE);
+        nodelay(stdscr, TRUE);
+
+
+        // Initialize color pairs (matching BlockColor enum values)
+        init_pair(1, COLOR_CYAN, COLOR_BLACK);      // BlockColor::CYAN
+        init_pair(2, COLOR_YELLOW, COLOR_BLACK);    // BlockColor::YELLOW
+        init_pair(3, COLOR_MAGENTA, COLOR_BLACK);   // BlockColor::PURPLE
+        init_pair(4, COLOR_GREEN, COLOR_BLACK);     // BlockColor::GREEN
+        init_pair(5, COLOR_RED, COLOR_BLACK);       // BlockColor::RED
+        init_pair(6, COLOR_BLUE, COLOR_BLACK);      // BlockColor::BLUE
+        init_pair(7, COLOR_YELLOW, COLOR_BLACK);
     }
 
     void shutdownCurses() {
+        std::lock_guard<std::mutex> lock(nCursesMutex);
+
         endwin();             // Restore terminal
     }
 
     void startGame() {
         initCurses();
-        gameRunning = true;
+        gameRunning.store(true);
 
-        int i = 0;
-        while (gameRunning) {
-            update(i);
-            render(); // curses-based render
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        // Use emplace to construct the Block in-place
+        activeBlock.emplace(Point{5, 5}, BlockType::J, BlockColor::GREEN, &grid);
 
-            i++;
-            if (i > 20) {
-                endGame();
-            }
-        }
+        std::thread updateThread(&SceneRenderer::updateThreadTest, this);
+        std::thread renderThread(&SceneRenderer::renderThreadTest, this);
+        std::thread inputThread(&SceneRenderer::inputThread, this);
+
+
+        updateThread.join();
+        renderThread.join();
+        inputThread.join();
 
         shutdownCurses();
     }
 
     void endGame() {
-        gameRunning = false;
+        gameRunning.store(false);
     }
 
-    void update(int offset) {
-        resetGrid();
+    void inputThread() {
 
-        constexpr Point initPosition = {4, 2};
-        Block block(initPosition, BlockType::L);
-
-        auto currentPositions = block.getCurrentPosition();
-
-        if (offset < 18) {
-            for (int i = 0; i < 4; i++) {
-                grid[currentPositions[i].y + offset][currentPositions[i].x] = 'O';
+        while (gameRunning. load()) {
+            int ch;
+            {
+                std::lock_guard<std::mutex> lock(nCursesMutex);
+                ch = getch();
             }
+
+            if (ch != ERR) {
+
+                if (ch == 'q' || ch == 'Q') {
+                    endGame();
+                }
+                // Handle other keys
+                else if (ch == KEY_LEFT) {
+                    if (activeBlock.has_value()) {
+                        activeBlock.value().moveBlock(BlockMove::LEFT);
+                    }
+                }
+                else if (ch == KEY_RIGHT) {
+                    // Move right
+                    if (activeBlock.has_value()) {
+                        activeBlock.value().moveBlock(BlockMove::RIGHT);
+                    }
+                }
+                else if (ch == KEY_DOWN) {
+                    // Move down faster
+                    if (activeBlock.has_value()) {
+                        activeBlock.value().moveBlock(BlockMove::DOWN);
+                    }
+                }
+                else if (ch == KEY_UP || ch == ' ') {
+                    // Rotate
+                    if (activeBlock.has_value()) {
+                        activeBlock.value().moveBlock(BlockMove::ROTATE);
+                    }
+                }
+
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
 
-    void render() const {
-        // Clear the curses screen
-        clear();
 
-        // Draw the grid starting at some top-left offset, e.g., (0,0)
-        // Use mvaddch(row, col, ch) to place characters
-        for (int r = 0; r < (int)grid.size(); ++r) {
-            for (int c = 0; c < (int)grid[r].size(); ++c) {
-                // Add spacing similar to " std::cout << ' ' << cell << ' '; "
-                // One common approach is to draw each cell and maybe a space
-                mvaddch(r, c * 2, grid[r][c]);
-                mvaddch(r, c * 2 + 1, ' ');
-            }
-        }
+    void updateThreadTest(){
 
-        // Optional: draw a status line below the grid
-        mvprintw((int)grid.size() + 1, 0, "Press q to quit");
+        do {
 
-        // Flush changes to the terminal
-        refresh();
+            updateCounter++;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        } while (gameRunning.load());
+
     }
 
-    void resetGrid() {
-        grid = std::vector<std::vector<char>>(20, std::vector<char>(10, '.'));
+    void renderThreadTest() {
+
+        do {
+            {
+
+                std::lock_guard<std::mutex> lock(nCursesMutex);
+                // Clear the curses screen
+                auto currentGrid = grid.getGrid();
+                auto coloredBlocks = grid.getColorGrid();
+
+                clear();
+
+                // First pass: Draw the base grid (all '.' or '#')
+                for (int r = 0; r < static_cast<int>(currentGrid. size()); ++r) {
+                    for (int c = 0; c < static_cast<int>(currentGrid[r].size()); ++c) {
+                        char cell = currentGrid[r][c];
+                        mvaddch(r, c * 2, cell);
+                        mvaddch(r, c * 2 + 1, ' ');
+                    }
+                }
+
+                // Second pass: Draw colored blocks on top
+                for (const auto& colorPos : coloredBlocks) {
+                    int x = colorPos.position.x;
+                    int y = colorPos.position.y;
+                    BlockColor color = colorPos.color;
+
+                    // Validate position
+                    if (x >= 0 && x < 10 && y >= 0 && y < 20) {
+                        if (color != BlockColor::NONE) {
+                            // Turn on the color
+                            attron(COLOR_PAIR(static_cast<int>(color)));
+
+                            // Draw the colored block
+                            mvaddch(y, x * 2, '#');
+                            mvaddch(y, x * 2 + 1, ' ');
+
+                            // Turn off the color
+                            attroff(COLOR_PAIR(static_cast<int>(color)));
+                        }
+                    }
+                }
+
+                // Third pass:  Draw active block (if it exists)
+                if (activeBlock.has_value()) {
+                    BlockColor blockColor = activeBlock->getColor();
+                    auto blockPositions = activeBlock->getCurrentPosition();
+
+                    attron(COLOR_PAIR(static_cast<int>(blockColor)));
+
+                    for (const auto& pos : blockPositions) {
+                        if (pos.x >= 0 && pos.x < 10 && pos.y >= 0 && pos.y < 20) {
+                            mvaddch(pos.y, pos.x * 2, '#');
+                            mvaddch(pos.y, pos.x * 2 + 1, ' ');
+                        }
+                    }
+
+                    attroff(COLOR_PAIR(static_cast<int>(blockColor)));
+                }
+
+
+
+                // Optional: draw a status line below the grid
+                mvprintw(static_cast<int>(currentGrid.size()) + 1, 0, "Press q to quit, %d", renderCounter);
+
+                // Flush changes to the terminal
+                refresh();
+
+            }
+
+            renderCounter++;
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+        } while (gameRunning.load());
     }
 };
 
