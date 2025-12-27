@@ -21,23 +21,44 @@ class SceneRenderer {
     int updateCounter = 0;
     int renderCounter = 0;
 
+    // Configurable drop speed (milliseconds between auto-drops)
+    int dropInterval = 300;  // 1 second by default
+    int dropTimer = 0;
+
     GameGrid grid;
 
     std::optional<Block> activeBlock;
 
-    void spawnNewBlock() {
+    // Returns true if spawn was successful, false if game over
+    bool spawnNewBlock() {
         BlockType types[] = {BlockType::I, BlockType::O, BlockType::T,
                             BlockType::Z, BlockType::J, BlockType::L};
         BlockType randomType = types[rand() % 6];
 
-        BlockColor colors[] = {BlockColor::CYAN, BlockColor::YELLOW,
-                              BlockColor::PURPLE, BlockColor::GREEN,
-                              BlockColor::RED, BlockColor:: BLUE, BlockColor::ORANGE};
+        BlockColor colors[] = {BlockColor:: CYAN, BlockColor:: YELLOW,
+                              BlockColor:: PURPLE, BlockColor::GREEN,
+                              BlockColor::RED, BlockColor::BLUE, BlockColor::ORANGE};
         BlockColor randomColor = colors[rand() % 7];
 
         Point spawnPos = {5, 2};
 
-        activeBlock.emplace(spawnPos, randomType, randomColor, &grid);
+        // Create the new block
+        Block newBlock(spawnPos, randomType, randomColor, &grid);
+
+        // Check if the spawn position is valid
+        auto spawnPositions = newBlock.getCurrentPosition();
+        for (const auto& pos : spawnPositions) {
+            if (! grid.isValidPosition(pos)) {
+                // Game over - can't spawn new block
+                return false;
+            }
+        }
+
+        // Valid spawn - replace the active block
+        activeBlock = newBlock;
+        dropTimer = 0;  // Reset drop timer
+
+        return true;
     }
 
 public:
@@ -157,7 +178,11 @@ public:
                     }
 
                     if (moveResult == MoveResult::LOCKED) {
-                        spawnNewBlock();
+                        auto spawnResult = spawnNewBlock();
+
+                        if (spawnResult == false) {
+                            gameRunning.store(false);
+                        }
                     }
                 }
 
@@ -168,22 +193,43 @@ public:
     }
 
 
-    void updateThreadTest(){
+    void updateThreadTest() {
+        const int updateIntervalMs = 100;  // Update every 100ms
 
-        do {
-
+        while (gameRunning.load()) {
             updateCounter++;
+            dropTimer += updateIntervalMs;
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            // Auto-drop the block when timer reaches the interval
+            if (dropTimer >= dropInterval) {
+                std::lock_guard<std::mutex> blockLock(blockMutex);
 
-        } while (gameRunning.load());
+                if (activeBlock.has_value()) {
+                    MoveResult result = activeBlock->moveBlock(BlockMove::DOWN);
 
+                    if (result == MoveResult::LOCKED) {
+                        bool spawnResult = spawnNewBlock();
+                        if (spawnResult == false) {
+                            gameRunning.store(false);
+                        }
+                    }
+                }
+
+                dropTimer = 0;  // Reset the timer
+            }
+
+            std:: this_thread::sleep_for(std::chrono::milliseconds(updateIntervalMs));
+        }
     }
 
     void renderThreadTest() {
 
         do {
             {
+
+                //skip first 4 rows
+
+                int rowsToSkip = 4;
 
                 std::lock_guard<std::mutex> lock(nCursesMutex);
                 // Clear the curses screen
@@ -194,6 +240,8 @@ public:
 
                 // First pass: Draw the base grid (all '.' or '#')
                 for (int r = 0; r < static_cast<int>(currentGrid. size()); ++r) {
+                    if (r <= rowsToSkip - 1) continue;
+
                     for (int c = 0; c < static_cast<int>(currentGrid[r].size()); ++c) {
                         char cell = currentGrid[r][c];
                         mvaddch(r, c * 2, cell);
@@ -208,7 +256,7 @@ public:
                     BlockColor color = colorPos.color;
 
                     // Validate position
-                    if (x >= 0 && x < 10 && y >= 0 && y < 20) {
+                    if (x >= 0 && x < 10 && y >= rowsToSkip && y < currentGrid.size()) {
                         if (color != BlockColor::NONE) {
                             // Turn on the color
                             attron(COLOR_PAIR(static_cast<int>(color)));
@@ -231,7 +279,7 @@ public:
                     attron(COLOR_PAIR(static_cast<int>(blockColor)));
 
                     for (const auto& pos : blockPositions) {
-                        if (pos.x >= 0 && pos.x < 10 && pos.y >= 0 && pos.y < 20) {
+                        if (pos.x >= 0 && pos.x < 10 && pos.y >= rowsToSkip && pos.y < currentGrid.size()) {
                             mvaddch(pos.y, pos.x * 2, '#');
                             mvaddch(pos.y, pos.x * 2 + 1, ' ');
                         }
@@ -255,6 +303,21 @@ public:
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
         } while (gameRunning.load());
+
+
+        {
+            std::lock_guard<std::mutex> blockLock(nCursesMutex);
+
+            auto currentGrid = grid.getGrid();
+            mvprintw(static_cast<int>(currentGrid.size()) + 3, 0, "GAME OVER");
+
+            refresh();
+        }
+
+        // wait 10 seconds to show user has lost
+        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+
+
     }
 };
 

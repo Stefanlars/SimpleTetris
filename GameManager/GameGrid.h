@@ -14,7 +14,7 @@ struct ColorPosition {
 
 class GameGrid {
 
-    std::vector<std::vector<char>> grid{20, std::vector<char>(10, '.')};
+    std::vector<std::vector<char>> grid{24, std::vector<char>(10, '.')};
 
     // empty until game starts populating it
     std::vector<ColorPosition> colorGrid{

@@ -30,12 +30,10 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ccd0ade3-614e-4c54-a2c7-7916767d5dc4" name="Changes" comment="Adds movement and color. Make a new grid object to add readability">
+    <list default="true" id="ccd0ade3-614e-4c54-a2c7-7916767d5dc4" name="Changes" comment="Adds block locking">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Blocks/Block.h" beforeDir="false" afterPath="$PROJECT_DIR$/Blocks/Block.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/GameManager/GameGrid.h" beforeDir="false" afterPath="$PROJECT_DIR$/GameManager/GameGrid.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/GameManager/SceneRenderer.h" beforeDir="false" afterPath="$PROJECT_DIR$/GameManager/SceneRenderer.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/enums.h" beforeDir="false" afterPath="$PROJECT_DIR$/enums.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -107,6 +105,11 @@
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -128,7 +131,7 @@
       <workItem from="1766028117472" duration="1952000" />
       <workItem from="1766534573638" duration="866000" />
       <workItem from="1766803739973" duration="8521000" />
-      <workItem from="1766846613385" duration="2917000" />
+      <workItem from="1766846613385" duration="5173000" />
     </task>
     <task id="LOCAL-00001" summary="init">
       <option name="closed" value="true" />
@@ -162,7 +165,15 @@
       <option name="project" value="LOCAL" />
       <updated>1766813365281</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Adds block locking">
+      <option name="closed" value="true" />
+      <created>1766863901341</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1766863901341</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -177,6 +188,7 @@
     <MESSAGE value="init" />
     <MESSAGE value="Adds scene renderer" />
     <MESSAGE value="Adds movement and color. Make a new grid object to add readability" />
-    <option name="LAST_COMMIT_MESSAGE" value="Adds movement and color. Make a new grid object to add readability" />
+    <MESSAGE value="Adds block locking" />
+    <option name="LAST_COMMIT_MESSAGE" value="Adds block locking" />
   </component>
 </project>
