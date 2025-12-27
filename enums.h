@@ -5,6 +5,8 @@
 #ifndef SIMPLETETRIS_ENUMS_H
 #define SIMPLETETRIS_ENUMS_H
 
+#include <array>
+
 
 enum class BlockType { I, O, T, S, Z, J, L };
 
@@ -31,6 +33,17 @@ enum class BlockColor {
 struct Point {
     int x;
     int y;
+};
+
+struct BlockData {
+    std::array<Point, 4> positions;
+    BlockColor color;
+};
+
+enum class MoveResult {
+    MOVED,      // Block successfully moved
+    BLOCKED,    // Move blocked but block still active
+    LOCKED      // Block locked into grid
 };
 
 #endif //SIMPLETETRIS_ENUMS_H

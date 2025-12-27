@@ -16,12 +16,29 @@ class SceneRenderer {
 
     std::mutex nCursesMutex;
 
+    std::mutex blockMutex;
+
     int updateCounter = 0;
     int renderCounter = 0;
 
     GameGrid grid;
 
     std::optional<Block> activeBlock;
+
+    void spawnNewBlock() {
+        BlockType types[] = {BlockType::I, BlockType::O, BlockType::T,
+                            BlockType::Z, BlockType::J, BlockType::L};
+        BlockType randomType = types[rand() % 6];
+
+        BlockColor colors[] = {BlockColor::CYAN, BlockColor::YELLOW,
+                              BlockColor::PURPLE, BlockColor::GREEN,
+                              BlockColor::RED, BlockColor:: BLUE, BlockColor::ORANGE};
+        BlockColor randomColor = colors[rand() % 7];
+
+        Point spawnPos = {5, 2};
+
+        activeBlock.emplace(spawnPos, randomType, randomColor, &grid);
+    }
 
 public:
     SceneRenderer() = default;
@@ -73,8 +90,10 @@ public:
         initCurses();
         gameRunning.store(true);
 
+        // grid.createDummyData();
+
         // Use emplace to construct the Block in-place
-        activeBlock.emplace(Point{5, 5}, BlockType::J, BlockColor::GREEN, &grid);
+        activeBlock.emplace(Point{5, 5}, BlockType::Z, BlockColor::BLUE, &grid);
 
         std::thread updateThread(&SceneRenderer::updateThreadTest, this);
         std::thread renderThread(&SceneRenderer::renderThreadTest, this);
@@ -106,28 +125,39 @@ public:
                 if (ch == 'q' || ch == 'Q') {
                     endGame();
                 }
-                // Handle other keys
-                else if (ch == KEY_LEFT) {
-                    if (activeBlock.has_value()) {
-                        activeBlock.value().moveBlock(BlockMove::LEFT);
+
+                if (activeBlock.has_value()) {
+                    // Lock block access
+                    std::lock_guard<std::mutex> blockLock(blockMutex);
+
+                    MoveResult moveResult = MoveResult::BLOCKED;
+
+
+                    // Handle other keys
+                    if (ch == KEY_LEFT) {
+                        moveResult = activeBlock.value().moveBlock(BlockMove::LEFT);
                     }
-                }
-                else if (ch == KEY_RIGHT) {
-                    // Move right
-                    if (activeBlock.has_value()) {
-                        activeBlock.value().moveBlock(BlockMove::RIGHT);
+                    else if (ch == KEY_RIGHT) {
+                        // Move right
+
+                        moveResult = activeBlock.value().moveBlock(BlockMove::RIGHT);
+
                     }
-                }
-                else if (ch == KEY_DOWN) {
-                    // Move down faster
-                    if (activeBlock.has_value()) {
-                        activeBlock.value().moveBlock(BlockMove::DOWN);
+                    else if (ch == KEY_DOWN) {
+                        // Move down faster
+
+                        moveResult = activeBlock.value().moveBlock(BlockMove::DOWN);
+
                     }
-                }
-                else if (ch == KEY_UP || ch == ' ') {
-                    // Rotate
-                    if (activeBlock.has_value()) {
-                        activeBlock.value().moveBlock(BlockMove::ROTATE);
+                    else if (ch == KEY_UP || ch == ' ') {
+                        // Rotate
+
+                        moveResult = activeBlock.value().moveBlock(BlockMove::ROTATE);
+
+                    }
+
+                    if (moveResult == MoveResult::LOCKED) {
+                        spawnNewBlock();
                     }
                 }
 

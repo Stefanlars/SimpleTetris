@@ -160,7 +160,7 @@ public:
     }
 
 
-    void moveBlock(const BlockMove move) {
+    MoveResult moveBlock(const BlockMove move) {
         // create a copy of the current block. perform the movement.
         // check if it conflicts with a current block.
         //
@@ -197,9 +197,22 @@ public:
 
         }
 
+
+
         if (areAllPositionsValid(testPos)) {
             centerPosition = testPos;
+            return MoveResult::MOVED;
         }
+        if (move == BlockMove:: DOWN) {
+            // Get current positions and add them to the grid
+            auto positions = getCurrentPosition();
+
+            gameGrid->addColorBlocks({positions, color});
+            return MoveResult::LOCKED;
+        }
+
+        return MoveResult::BLOCKED;
+
     }
 
 
