@@ -21,9 +21,73 @@ class GameGrid {
 
     };
 
+    // Helper function to check if a position has a block
+    bool hasBlockAt(int x, int y) const {
+        for (const auto& colorPos : colorGrid) {
+            if (colorPos.position.x == x && colorPos.position.y == y) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Helper function to check if a row is completely filled
+    bool isRowFilled(int row) const {
+        int width = grid[0].size();  // Should be 10
+
+        for (int x = 0; x < width; x++) {
+            if (!hasBlockAt(x, row)) {
+                return false;  // Found an empty spot
+            }
+        }
+
+        return true;  // All positions filled
+    }
+
+    // Remove all blocks from a specific row
+    void removeRow(int row) {
+        // Use erase-remove idiom to remove all blocks in this row
+        colorGrid.erase(
+            std::remove_if(colorGrid. begin(), colorGrid.end(),
+                [row](const ColorPosition& cp) {
+                    return cp.position. y == row;
+                }),
+            colorGrid.end()
+        );
+    }
+
+    // Move all blocks above a certain row down by one
+    void moveRowsDown(int aboveRow) {
+        for (auto& colorPos : colorGrid) {
+            if (colorPos.position.y < aboveRow) {
+                colorPos.position.y++;
+            }
+        }
+    }
+
     // some kind of dynamic array of blocks with their positions
 
     public:
+
+        int deleteFilledRows() {
+            int rowsCleared = 0;
+
+            // Check from bottom to top
+            for (int row = grid.size() - 1; row >= 0; row--) {
+                if (isRowFilled(row)) {
+                    removeRow(row);
+                    moveRowsDown(row);
+                    rowsCleared++;
+
+                    // Check the same row again since blocks moved down
+                    row++;
+                }
+            }
+
+            return rowsCleared;
+            // Optional: return number of rows cleared for scoring
+            // return rowsCleared;
+        }
 
 
         std::vector<std::vector<char>> getGrid() {
@@ -128,6 +192,8 @@ class GameGrid {
             for (const auto position: block.positions) {
                 colorGrid.push_back({position, block.color});
             }
+
+            deleteFilledRows();
 
         }
 
